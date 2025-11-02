@@ -55,7 +55,7 @@ def participant_node(state: State) -> dict:
     """
     Participant node - calls the appropriate participant and handles output.
     """
-    next_speaker = state.get("next_speaker", "ah_seng")  # Default fallback
+    next_speaker = state.get("next_speaker", "dr_tan")  # Default fallback
 
     # Call participant with the selected speaker
     result = participant(next_speaker, state)

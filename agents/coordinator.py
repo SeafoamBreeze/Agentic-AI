@@ -33,25 +33,25 @@ def coordinator(state):
         # Messages are now always dicts
         conversation_text += f"{msg.get('content', '')}\n"
 
-    system_prompt = """You are a player in an Among Us game who will be known as White.
-    There are 4 players in this lobby, including yourself. 
-    The other players will be known as Red, Blue and Green.
-    There will be a total of 3 Crewmates and 1 imposter, randonly assigned.
-    The identities of the players will remain unknown until the game ends.
+    system_prompt = """
+    You are managing a lively conversation at a Singapore kopitiam.
 
-    Players:
-    - Red: Boy, lively and energetic, tries to make game fun for everyone
-    - Blue: Boy, calm and collected, occassionally 
-    - Green: Girl, valley girl speech pattern, dramatic
+    Available speakers:
+    - mei_qi: Young 21yo content creator, social media savvy, knows latest news and trends, also curious about bird sightings
+    - bala: Ex-statistician turned football tipster, dry humor, analytical, enjoys spotting patterns 
+    - dr_tan: Retired 72yo philosophy professor, thoughtful and deep thinker, likes sharing interesting facts 
 
     Based on the conversation flow, select who should speak next to keep the conversation lively and natural.
     Consider:
     - Who hasn't spoken recently
-    - Who has been accused of being the imposter
-    - Most importantly, who would add interesting perspective
+    - Who has relevant expertise or interest for the current topic
+    - Who would add an interesting perspective
     - Natural kopitiam banter flow
- 
-    Respond with ONLY the speaker ID (Red, Blue, Green).
+    - mei_qi should speak more about social media, trends, and recent bird sightings or news she just saw
+    - bala may analyze bird sightings data or provide witty observations
+    - dr_tan may add philosophical or fun factual insights about birds
+
+    Respond with ONLY the speaker ID (mei_qi, bala, or dr_tan).
     """
 
     user_prompt = f"""Recent conversation:
@@ -78,7 +78,7 @@ Who should speak next to help deduce the imposter?"""
         debug(f"LLM selected: {selected_speaker}", "COORDINATOR")
 
         # Validate speaker
-        valid_speakers = ["ah_seng", "mei_qi", "bala", "dr_tan"]
+        valid_speakers = ["mei_qi", "bala", "dr_tan"]
         if selected_speaker not in valid_speakers:
             # Fallback to round-robin if invalid
             import random
@@ -88,7 +88,7 @@ Who should speak next to help deduce the imposter?"""
     except Exception as e:
         # Fallback selection if LLM fails
         import random
-        valid_speakers = ["ah_seng", "mei_qi", "bala", "dr_tan"]
+        valid_speakers = ["mei_qi", "bala", "dr_tan"]
         selected_speaker = random.choice(valid_speakers)
         debug(f"LLM error, random selection: {selected_speaker}", "COORDINATOR")
 

@@ -1,0 +1,26 @@
+Metadata-Version: 2.4
+Name: sgkopitiam
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: beautifulsoup4>=4.13.4
+Requires-Dist: grandalf>=0.8
+Requires-Dist: httpx>=0.28.1
+Requires-Dist: langchain>=0.3.27
+Requires-Dist: langchain-openai>=0.2.14
+Requires-Dist: langgraph>=0.6.6
+Requires-Dist: lxml>=6.0.1
+Requires-Dist: python-dotenv>=1.1.1
+Requires-Dist: pytz>=2025.2
+
+# kopitiam
+
+This is a simple project to learn LangGraph.
+
+## Set up
+
+```sh
+uv sync
+uv run python main.py
+```

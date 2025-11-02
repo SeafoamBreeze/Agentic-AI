@@ -1,0 +1,11 @@
+README.md
+pyproject.toml
+agents/__init__.py
+agents/coordinator.py
+agents/participant.py
+agents/summarizer.py
+sgkopitiam.egg-info/PKG-INFO
+sgkopitiam.egg-info/SOURCES.txt
+sgkopitiam.egg-info/dependency_links.txt
+sgkopitiam.egg-info/requires.txt
+sgkopitiam.egg-info/top_level.txt

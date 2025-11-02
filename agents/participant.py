@@ -1,4 +1,5 @@
-from tools import singapore_time, singapore_weather, singapore_news
+import traceback
+from tools import singapore_time, singapore_weather, singapore_news, bird_sightings
 from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage
 from utils import debug
@@ -7,21 +8,13 @@ import re
 
 # Persona configurations
 PERSONAS = {
-    "ah_seng": {
-        "name": "Uncle Ah Seng",
-        "age": 68,
-        "backstory": "30+ years running drinks stall at kopitiam, pragmatic and thrifty",
-        "personality": "Practical, wise, caring about regulars, complains about costs",
-        "speech_style": "Heavy Singlish, short sentences, uses 'lah', 'lor', 'wah'",
-        "tools": ["time", "weather"]
-    },
     "mei_qi": {
         "name": "Mei Qi",
         "age": 21,
         "backstory": "Young content creator promoting kopitiam online, social media influencer, very chatty.",
         "personality": "Upbeat, trendy, enthusiastic, loves sharing stories",
         "speech_style": "Mix of English and Singlish, uses 'OMG', 'yasss', occasionally emoji expressions",
-        "tools": ["time", "news"]
+        "tools": ["time", "news", "sightings"]
     },
     "bala": {
         "name": "Bala Nair",
@@ -37,7 +30,7 @@ PERSONAS = {
         "backstory": "Retired philosophy professor, enjoys deep conversations over kopi",
         "personality": "Thoughtful, philosophical, patient, loves teaching moments",
         "speech_style": "Proper English with minimal Singlish, thoughtful pauses, asks profound questions",
-        "tools": ["time", "weather", "news"]  # Dr. Tan has ALL tools
+        "tools": ["time", "weather", "news", "sightings"]  # Dr. Tan has ALL tools
     }
 }
 
@@ -55,6 +48,8 @@ def execute_tool(tool_name):
         return singapore_weather()
     elif tool_name == "news":
         return singapore_news()
+    elif tool_name == "sightings":
+        return bird_sightings()
     else:
         return f"Unknown tool: {tool_name}"
 
@@ -64,7 +59,7 @@ def participant(persona_id, state) -> dict:
     Generate speech for a persona using ReAct workflow with real tool calling.
 
     Args:
-        persona_id: One of "ah_seng", "mei_qi", "bala", "dr_tan"
+        persona_id: One of "mei_qi", "bala", "dr_tan"
         state: Current conversation state
 
     Returns:
@@ -86,7 +81,9 @@ def participant(persona_id, state) -> dict:
     tool_descriptions = {
         "time": "Returns current time in Singapore",
         "weather": "Returns current weather in Singapore",
-        "news": "Returns latest Singapore news"
+        "news": "Returns latest Singapore news",
+        "facts": "Return a short summary about a bird from Wikipedia",
+        "sightings": "Returns all bird sightings in Singapore in the last 7 days"
     }
 
     # Build available actions list based on persona's tools
@@ -95,47 +92,50 @@ def participant(persona_id, state) -> dict:
         available_actions += f"\n\n{tool}:\n{tool_descriptions[tool]}"
 
     # System prompt for ReAct
-    system_prompt = f"""You are {persona['name']}, {persona['age']} years old.
-Background: {persona['backstory']}
-Personality: {persona['personality']}
-Speech style: {persona['speech_style']}
+    system_prompt = f"""
+    You are {persona['name']}, {persona['age']} years old.
+    Background: {persona['backstory']}
+    Personality: {persona['personality']}
+    Speech style: {persona['speech_style']}
 
-You are at a Singapore kopitiam having a casual conversation.
+    You are at a Singapore kopitiam having a casual conversation.
 
-You run in a loop of Thought, Action, Observation.
-At the end of the loop you output a Message.
+    You run in a loop of Thought, Deduction, Action, Observation.
+    At the end of the loop you output a Message.
 
-Use Thought to describe your thoughts about the conversation.
-Use Action to run one of the actions available to you.
-Observation will be the result of running those actions.
+    Use Thought to describe your thoughts about the conversation.
+    Use Action to run one of the actions available to you.
+    Observation will be the result of running those actions.
 
-Possible actions are:
+    Possible actions are:
 
-{available_actions}
+    {available_actions}
 
-You only have access to the tools/actions listed above. Do not call tools that you do not have access to.
+    You only have access to the tools/actions listed above. Do not call tools that you do not have access to.
 
-------
+    ------
 
-Example session:
+    Example session:
 
-Thought: I should check what time it is to frame my response
-Action: time
+    Thought: I should check what time it is to frame my response
+    Action: time
 
-You will be called again with:
-Observation: Time in Singapore now: [Actual time returned after you call the tool, THIS IS NOT THE RIGHT TIME, call Action: time to get the actual time]
+    You will be called again with:
+    Observation: Time in Singapore now: [Actual time returned after you call the tool, THIS IS NOT THE RIGHT TIME, call Action: time to get the actual time]
 
-You must never try to guess the time or weather or news. Rely on the Observation that you will be called later on for the answers. You MUST NOT answer with those.
+    You must never try to guess the time or weather or news or birds. 
+    Rely on the Observation that you will be called later on for the answers. 
+    You MUST NOT answer with those.
 
-You then continue thinking or output:
-Message: [Your response in character]
+    You then continue thinking or output:
+    Message: [Your response in character]
 
-IMPORTANT:
-- You can use multiple actions by continuing the loop
-- You must not be providing Observation in your response. Observation is a result from tool, not for you to respond.
-- Once you have enough information, output Message: followed by your response
-- Keep your Message concise (1-2 sentences) and in character
-"""
+    IMPORTANT:
+    - You can use multiple actions by continuing the loop
+    - You must not be providing Observation in your response. Observation is a result from tool, not for you to respond.
+    - Once you have enough information, output Message: followed by your response
+    - Keep your Message concise (1-2 sentences) and in character
+    """
 
     # Internal loop for ReAct
     max_iterations = 5  # Prevent infinite loops
@@ -193,6 +193,8 @@ IMPORTANT:
             internal_context += f"\n{content}\n"
 
         except Exception as e:
+            print("Error occurred:", e)
+            traceback.print_exc()
             # Fallback response if LLM fails
             return {
                 "messages": [{
